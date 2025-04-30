@@ -1,0 +1,24 @@
+{
+  "name": "ts_search",
+  "version": "1.0.0",
+  "description": "Search PBS Media, Khan Academy and CK12 for Educational Content",
+  "main": "dist/search.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/search.js",
+    "dev": "ts-node src/search.ts",
+    "search": "ts-node src/cli.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  },
+  "author": "Zeeshan Chawdhary",
+  "license": "ISC"
+}
