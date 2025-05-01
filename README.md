@@ -32,7 +32,6 @@ npm install
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_AUTH_EMAIL=your_auth_email
 SUPABASE_AUTH_PASSWORD=your_auth_password
-nstall
 ```
 
 ## Usage
