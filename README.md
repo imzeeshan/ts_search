@@ -34,6 +34,9 @@ SUPABASE_AUTH_EMAIL=your_auth_email
 SUPABASE_AUTH_PASSWORD=your_auth_password
 ```
 
+## Main Search File
+\src\utils\supabase\actions\search.ts
+
 ## Usage
 ```npm run build
 npm run search "your search query"
@@ -47,6 +50,8 @@ The results will be returned in JSON format with the following information:
 - Content Type (Video, Interactive Lesson, Article, etc.)
 - Source (PBS Learning Media or CK-12)
 - Direct link to the content
+
+![Response](Response.png)
 
 ## Database Schema
 The project uses Supabase with the following schema for storing search results:
