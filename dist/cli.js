@@ -30,7 +30,6 @@ async function runSearch() {
         console.log(JSON.stringify(results));
     }
     catch (error) {
-        // Better error handling without using 'any' type
         console.error(JSON.stringify({
             error: error instanceof Error ? error.message : 'Unknown error occurred'
         }));

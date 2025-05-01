@@ -1,10 +1,8 @@
 "use strict";
-// Remove the 'use server' directive since this isn't a Next.js app
-// 'use server';
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.search = search;
-// Update the import path to use relative paths instead of the @ alias
 const server_1 = require("../../../utils/supabase/server");
+const playwright_1 = require("playwright");
 // Default pagination values
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
@@ -86,6 +84,47 @@ async function searchCK12(query) {
     }
     catch (error) {
         console.error('CK12 search error:', error);
+        return [];
+    }
+}
+async function khanAcademy(query) {
+    try {
+        const browser = await playwright_1.chromium.launch({ headless: false });
+        const page = await browser.newPage();
+        const searchUrl = 'https://www.khanacademy.org/search?page_search_query=' + query;
+        await page.goto(searchUrl, { waitUntil: 'networkidle' });
+        await page.waitForSelector('#indexed-search-results > div._xu2jcg > ul', { timeout: 15000 });
+        const results = await page.evaluate(() => {
+            const items = [];
+            const elements = document.querySelectorAll('#indexed-search-results > div._xu2jcg > ul > li');
+            elements.forEach((element) => {
+                const title = element.querySelector('a > div._pxfwtyj > div._5uggrpt > div._1ufuji7')?.textContent?.trim() || '';
+                const link = element.querySelector('a')?.getAttribute('href') || '';
+                const typeText = element.querySelector('span')?.textContent?.trim() || ''; // Preserve type detection
+                const description = element.querySelector('span._q2j5iam')?.textContent?.trim() || '';
+                const type = typeText === 'Video'
+                    ? 'Video'
+                    : typeText === 'Article'
+                        ? 'Article'
+                        : typeText === 'Lesson'
+                            ? 'Interactive Lesson'
+                            : 'Article';
+                items.push({
+                    title,
+                    description,
+                    image_url: 'https://placehold.co/400x300?text=Khan+Academy',
+                    link: 'https://www.khanacademy.org' + link,
+                    type,
+                    source: 'KhanAcademy',
+                });
+            });
+            return items;
+        });
+        await browser.close();
+        return results;
+    }
+    catch (error) {
+        console.error('Khan Academy search error:', error);
         return [];
     }
 }
@@ -197,11 +236,14 @@ async function search(prevState, formData) {
     const page = Number(formData.get('page')) || DEFAULT_PAGE;
     const pageSize = Number(formData.get('pageSize')) || DEFAULT_PAGE_SIZE;
     if (searchQuery?.trim()) {
-        const [pbsResults, ck12Results] = await Promise.all([
+        const [pbsResults, ck12Results //, khanResults
+        ] = await Promise.all([
             searchPBS(searchQuery),
-            searchCK12(searchQuery)
+            searchCK12(searchQuery),
+            //    khanAcademy(searchQuery)
         ]);
-        const combinedResults = [...pbsResults, ...ck12Results].map(result => ({
+        const combinedResults = [...pbsResults, ...ck12Results, //...khanResults
+        ].map(result => ({
             ...result,
             description: result.description || '',
             image_url: result.image_url || ''
