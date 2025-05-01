@@ -17,9 +17,12 @@
     "playwright": "^1.52.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.25.1",
     "@types/node": "^20.17.32",
+    "eslint": "^9.25.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.31.1"
   },
   "author": "Zeeshan Chawdhary",
   "license": "ISC"
