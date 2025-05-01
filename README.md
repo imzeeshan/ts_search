@@ -35,8 +35,9 @@ SUPABASE_AUTH_PASSWORD=your_auth_password
 ```
 
 ## Usage
-npm run build
+```npm run build
 npm run search "your search query"
+```
 
 The results will be returned in JSON format with the following information:
 
