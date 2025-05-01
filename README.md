@@ -28,10 +28,12 @@ npm install
 
 ## Configuration
 1. Create a .env file in the root directory with the following variables:
-SUPABASE_URL=your_supabase_url
+```SUPABASE_URL=your_supabase_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_AUTH_EMAIL=your_auth_email
 SUPABASE_AUTH_PASSWORD=your_auth_password
+nstall
+```
 
 ## Usage
 npm run build
