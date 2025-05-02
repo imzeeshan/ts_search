@@ -1,5 +1,5 @@
 {
-  "name": "ts_search",
+  "name": "edu_search",
   "version": "1.0.0",
   "description": "Search PBS Media, Khan Academy and CK12 for Educational Content",
   "main": "dist/search.js",
