@@ -1,8 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.search = search;
-const server_1 = require("../../../utils/supabase/server");
+const supabase_js_1 = require("@supabase/supabase-js");
 const playwright_1 = require("playwright");
+// Check if environment variables are set
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_ANON_KEY;
+if (!supabaseUrl || !supabaseKey) {
+    throw new Error('Missing Supabase environment variables');
+}
+const supabase = (0, supabase_js_1.createClient)(supabaseUrl, supabaseKey);
 // Default pagination values
 const DEFAULT_PAGE = 1;
 const DEFAULT_PAGE_SIZE = 10;
@@ -109,13 +116,14 @@ async function khanAcademy(query) {
                         : typeText === 'Lesson'
                             ? 'Interactive Lesson'
                             : 'Article';
+                // Update the source value in the khanAcademy function
                 items.push({
                     title,
                     description,
                     image_url: 'https://placehold.co/400x300?text=Khan+Academy',
                     link: 'https://www.khanacademy.org' + link,
                     type,
-                    source: 'KhanAcademy',
+                    source: 'Khan Academy', // Changed from 'KhanAcademy' to 'Khan Academy'
                 });
             });
             return items;
@@ -128,50 +136,17 @@ async function khanAcademy(query) {
         return [];
     }
 }
-// Use type assertion for the supabase client
-async function getStoredResults(supabase, userId, page = 1, pageSize = 10, searchQuery) {
-    try {
-        let query = supabase
-            .from('search_results')
-            .select('*', { count: 'exact' })
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false });
-        // Add search filter if searchQuery is provided
-        if (searchQuery?.trim()) {
-            const normalizedQuery = searchQuery.trim().toLowerCase();
-            query = query.or(`title.ilike.%${normalizedQuery}%,description.ilike.%${normalizedQuery}%`);
-        }
-        // Get paginated results
-        const { data, count, error } = await query
-            .range((page - 1) * pageSize, page * pageSize - 1);
-        if (error) {
-            console.error('Error fetching stored results:', error);
-            return { results: [], totalItems: 0 };
-        }
-        return {
-            results: data.map((result) => ({
-                id: result.id,
-                title: result.title,
-                description: result.description || '',
-                image: result.image_url || '',
-                type: result.type,
-                source: result.source,
-                url: result.link,
-                created_at: result.created_at
-            })),
-            totalItems: count ?? 0
-        };
-    }
-    catch (error) {
-        console.error('Error fetching stored results:', error);
-        return { results: [], totalItems: 0 };
-    }
-}
-// Update the storeResults function to use the same type as getStoredResults
-async function storeResults(results, userId, supabase // Use the same type as getStoredResults
-) {
+async function storeResults(results, userId) {
     for (const result of results) {
         try {
+            // Transform the type to match ContentType
+            const contentType = result.type === 'Video' ? 'Video'
+                : result.type === 'Interactive Lesson' ? 'Interactive Lesson'
+                    : result.type === 'Quiz' ? 'Quiz'
+                        : result.type === 'Worksheet' ? 'Worksheet'
+                            : result.type === 'Assessment' ? 'Assessment'
+                                : result.type === 'Game' ? 'Game'
+                                    : 'Article'; // Default to Article if no match
             const { data: existingData, error: queryError } = await supabase
                 .from('search_results')
                 .select('*')
@@ -182,17 +157,17 @@ async function storeResults(results, userId, supabase // Use the same type as ge
             if (queryError || !existingData) {
                 const { error } = await supabase
                     .from('search_results')
-                    .insert([{
-                        title: result.title,
-                        description: result.description || null,
-                        image_url: result.image_url || null,
-                        link: result.link,
-                        type: result.type,
-                        source: result.source,
-                        user_id: userId,
-                        id: crypto.randomUUID(),
-                        created_at: new Date().toISOString()
-                    }]);
+                    .insert({
+                    title: result.title,
+                    description: result.description || null,
+                    image_url: result.image_url || null,
+                    link: result.link,
+                    type: contentType, // Use the transformed type
+                    source: result.source,
+                    user_id: userId,
+                    id: crypto.randomUUID(),
+                    created_at: new Date().toISOString()
+                });
                 if (error) {
                     console.error('Error inserting result:', error);
                 }
@@ -201,6 +176,47 @@ async function storeResults(results, userId, supabase // Use the same type as ge
         catch (error) {
             console.error('Error storing result:', error);
         }
+    }
+}
+async function getStoredResults(userId, page, pageSize, searchQuery) {
+    try {
+        let query = supabase
+            .from('search_results')
+            .select('*', { count: 'exact' })
+            .eq('user_id', userId);
+        if (searchQuery?.trim()) {
+            query = query.or(`title.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+        }
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize - 1;
+        const { data, error, count } = await query
+            .order('created_at', { ascending: false })
+            .range(start, end);
+        if (error) {
+            console.error('Error fetching stored results:', error);
+            return { results: [], totalItems: 0 };
+        }
+        if (!data) {
+            return { results: [], totalItems: 0 };
+        }
+        const results = data.map(item => ({
+            id: item.id,
+            title: item.title,
+            description: item.description || '',
+            image: item.image_url || '',
+            type: item.type,
+            source: item.source,
+            url: item.link,
+            created_at: item.created_at
+        }));
+        return {
+            results,
+            totalItems: count || 0
+        };
+    }
+    catch (error) {
+        console.error('Error in getStoredResults:', error);
+        return { results: [], totalItems: 0 };
     }
 }
 // Group results by source
@@ -221,7 +237,6 @@ function groupResultsBySource(results) {
 }
 // Use a type assertion in the search function
 async function search(prevState, formData) {
-    const supabase = await (0, server_1.createClient)();
     // Sign in with email and password from environment variables
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: process.env.SUPABASE_AUTH_EMAIL || '',
@@ -236,25 +251,20 @@ async function search(prevState, formData) {
     const page = Number(formData.get('page')) || DEFAULT_PAGE;
     const pageSize = Number(formData.get('pageSize')) || DEFAULT_PAGE_SIZE;
     if (searchQuery?.trim()) {
-        const [pbsResults, ck12Results //, khanResults
-        ] = await Promise.all([
+        const [pbsResults, ck12Results] = await Promise.all([
             searchPBS(searchQuery),
             searchCK12(searchQuery),
-            //    khanAcademy(searchQuery)
         ]);
-        const combinedResults = [...pbsResults, ...ck12Results, //...khanResults
-        ].map(result => ({
+        const combinedResults = [...pbsResults, ...ck12Results].map(result => ({
             ...result,
             description: result.description || '',
             image_url: result.image_url || ''
         }));
-        // Remove the type assertion
-        await storeResults(combinedResults, userId, supabase);
+        await storeResults(combinedResults, userId);
     }
-    // This code should be outside the if block to ensure it always runs
-    const { results, totalItems } = await getStoredResults(supabase, userId, page, pageSize, searchQuery);
-    const groupedResults = !searchQuery?.trim() ? groupResultsBySource(results) : undefined;
-    // Return statement that will always be reached
+    // Get stored results after storing new ones
+    const { results, totalItems } = await getStoredResults(userId, page, pageSize, searchQuery);
+    const groupedResults = !searchQuery?.trim() ? groupResultsBySource(results) : [];
     return {
         results,
         groupedResults,

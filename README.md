@@ -89,6 +89,12 @@ const results = await search({
   }
 }, formData);
 
+## Updates
+1) Added database types so that code can match it perfectly. See https://supabase.com/docs/guides/api/rest/generating-types#generating-types-from-project-dashboard 
+Note: Every time you make a change to the database, you will need to regenerate the types.
+
+2) Cleaned up the search.ts file. No more 'undefined', 'unknown' or 'any'.
+
 ## Author
 Zeeshan Chawdhary
 
